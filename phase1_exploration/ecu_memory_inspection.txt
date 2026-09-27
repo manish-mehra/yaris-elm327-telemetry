@@ -1,0 +1,21 @@
+============================================================
+ TOYOTA YARIS ECU DIAGNOSTIC MEMORY INSPECTION REPORT
+ Timestamp : 2026-09-27 21:40:32
+ Protocol  : ISO 15765-4 (CAN 11/500)
+============================================================
+
+[*] STORED DIAGNOSTIC TROUBLE CODES (DTCs - Mode 03):
+  [+] No active error codes stored in ECU memory.
+
+[*] PENDING DIAGNOSTIC TROUBLE CODES (Mode 07):
+  [+] No pending codes found.
+
+[*] STORED MILEAGE & SYSTEM COUNTERS:
+  -> Distance since codes cleared : 0.0 kilometer
+  -> Warm-up cycles since cleared  : 0.0 count
+  -> Time elapsed since ECU reset  : 3.0 minute
+
+[*] VEHICLE METADATA:
+  -> Vehicle VIN: bytearray(b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff')
+
+
