@@ -1,0 +1,97 @@
+# ==========================================
+# Python & Environments
+# ==========================================
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# ==========================================
+# Databases & Local Logs
+# ==========================================
+# Local SQLite database files created during testing
+*.sqlite
+*.sqlite3
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# Log files
+*.log
+logs/
+
+# ==========================================
+# Hardware, OS & IDE Artifacts
+# ==========================================
+# macOS clutter
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows clutter
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+
+# Linux / Raspberry Pi temporary & swap files
+*~
+*.swp
+*.swo
+
+# IDEs & Code Editors
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# ==========================================
+# Environment Variables & Secrets
+# ==========================================
+# Do not commit real credentials, API keys, or machine IPs
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+*.pem
+
+# ==========================================
+# Test & Coverage Outputs
+# ==========================================
+.pytest_cache/
+.coverage
+htmlcov/
+.nox/
+.tox/
