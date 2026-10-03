@@ -1,3 +1,4 @@
+#!/home/pi/Development/yaris-elm327-telemetry/venv/bin/python
 """Car telemetry dashboard for a 480x320 Raspberry Pi screen.
 
 Runs the OBD logger in a background thread (so only ONE process owns the
