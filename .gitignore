@@ -39,7 +39,6 @@ MANIFEST
 # Local SQLite database files created during testing
 *.sqlite
 *.sqlite3
-*.db
 *.db-journal
 *.db-wal
 *.db-shm
