@@ -106,47 +106,23 @@ def _raise_exit(signum, frame):
     # lets `finally` run on SIGTERM (e.g. systemd stop)
     raise SystemExit(0)
 
-# Four stages of connection: not connected, elm connected, obd connected, and car connected(final handshake)
-def establish_elm327_connection():
-    retry_count = 0
-    
-    while retry_count < MAXIMUM_CONNECTION_RETRY:
-        print(f"[*] Connection attempt {retry_count + 1} of {MAXIMUM_CONNECTION_RETRY}...")
-        
-        connection = obd.OBD(PORT, baudrate=BAUDRATE, fast=False)
-        status = connection.status
-        
-        if status == obd.OBDStatus.CAR_CONNECTED:
-            print("Connection Success 🟢 [4]: Successfully established connection with Car!")
-            return connection
-            
-        elif status == obd.OBDStatus.OBD_CONNECTED:
-            print("Connection Failed 🔴 [3]: Reached OBD, but failed to handshake with Car (Ignition on?)")
-            
-        elif status == obd.OBDStatus.ELM_CONNECTED:
-            print("Connection Failed 🔴 [2]: Connected to ELM adapter, but not the car port.")
-            
-        else:
-            print("Connection Failed 🔴 [1]: Disconnected physical media / No response from adapter.")
-        
-        retry_count += 1
-        time.sleep(2) # Give Bluetooth/hardware a brief moment to reset
-        
-    print("[!] Failed to establish connection. Retry exhausted!")
-    sys.exit(1)
             
 def main():
     signal.signal(signal.SIGTERM, _raise_exit)
-
-    connection = establish_elm327_connection()
-    print("🟢 Connection verified. Proceeding with trip initialization...")
     
+    connection = obd.OBD(PORT, baudrate=BAUDRATE, fast=False)
+    if not connection.is_connected():
+        print("Connection Failed 🔴: Failed to establish connection with OBD.")
+        sys.exit(1)
+
     conn = db.connect(DB_PATH)
     trip_id = db.start_trip(conn, **read_trip_start(connection))
 
     now = time.monotonic()
     next_1s = now
     next_30s = now  # first 30s-tier sample is taken immediately
+    
+    
 
     try:
         while True:
