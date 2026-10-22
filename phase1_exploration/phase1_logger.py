@@ -108,8 +108,8 @@ def _raise_exit(signum, frame):
 
             
 def main():
+    print("starting program....") 
     signal.signal(signal.SIGTERM, _raise_exit)
-    
     connection = obd.OBD(PORT, baudrate=BAUDRATE, fast=False)
     if not connection.is_connected():
         print("Connection Failed 🔴: Failed to establish connection with OBD.")
