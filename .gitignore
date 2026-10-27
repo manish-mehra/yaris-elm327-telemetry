@@ -95,3 +95,7 @@ Desktop.ini
 htmlcov/
 .nox/
 .tox/
+# ======================
+# frontend
+# ======================
+ui/node_modules/

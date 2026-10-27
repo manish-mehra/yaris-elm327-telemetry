@@ -1,0 +1,32 @@
+// One entry per chart. `src: 30` means the series comes from samples_30s.
+const C = { blue: "#4f8cff", orange: "#ff9f43", green: "#2ec4a0", red: "#ff5d6c", purple: "#a78bfa", gold: "#e8b931" };
+
+export const SPECS = [
+  { t: "Speed & RPM", u: "1 s",
+    series: [{ key: "speed_kmh", label: "Speed (km/h)", color: C.blue }, { key: "rpm", label: "RPM", color: C.orange, axis: "y1" }],
+    axes: [{ id: "y", title: "km/h", min: 0 }, { id: "y1", title: "rpm", min: 0 }] },
+  { t: "Engine load & throttle", u: "1 s",
+    series: [{ key: "engine_load", label: "Load (%)", color: C.purple }, { key: "throttle_pos", label: "Throttle (%)", color: C.green }],
+    axes: [{ id: "y", title: "%", min: 0, max: 105 }] },
+  { t: "Airflow (MAF)", u: "1 s",
+    series: [{ key: "maf_gps", label: "MAF (g/s)", color: C.gold }],
+    axes: [{ id: "y", title: "g/s", min: 0 }] },
+  { t: "Fuel trim", u: "short 1 s · long 30 s",
+    series: [{ key: "short_fuel_trim", label: "Short term (%)", color: C.red },
+             { key: "long_fuel_trim", label: "Long term (%)", color: C.blue, src: 30, step: 1, dots: 1 }],
+    axes: [{ id: "y", title: "%" }] },
+  { t: "Coolant & intake temperature", u: "1 s",
+    series: [{ key: "coolant_temp_c", label: "Coolant (°C)", color: C.red }, { key: "intake_temp_c", label: "Intake (°C)", color: C.blue }],
+    axes: [{ id: "y", title: "°C" }] },
+  { t: "Catalyst temperature & post-cat O₂", u: "30 s",
+    series: [{ key: "catalyst_temp_c", label: "Catalyst (°C)", color: C.orange, src: 30, step: 1, dots: 1 },
+             { key: "o2_post_cat_v", label: "O₂ post-cat (V)", color: C.green, src: 30, dots: 1, axis: "y1" }],
+    axes: [{ id: "y", title: "°C" }, { id: "y1", title: "V", min: 0, max: 1 }] },
+  { t: "Module voltage", u: "30 s",
+    series: [{ key: "module_voltage_v", label: "Voltage (V)", color: C.gold, src: 30, dots: 1 }],
+    axes: [{ id: "y", title: "V" }] },
+  { t: "Ambient temperature & barometric pressure", u: "30 s",
+    series: [{ key: "ambient_temp_c", label: "Ambient (°C)", color: C.blue, src: 30, step: 1, dots: 1 },
+             { key: "baro_pressure_kpa", label: "Baro (kPa)", color: C.purple, src: 30, step: 1, axis: "y1" }],
+    axes: [{ id: "y", title: "°C" }, { id: "y1", title: "kPa" }] },
+];

@@ -1,0 +1,101 @@
+[
+  {
+    "trip_id": 1,
+    "vin": null,
+    "distance_since_dtc_clr": 326,
+    "run_time_s": 385,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 2,
+    "vin": null,
+    "distance_since_dtc_clr": 327,
+    "run_time_s": 126,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 3,
+    "vin": "G",
+    "distance_since_dtc_clr": 159,
+    "run_time_s": 0,
+    "mil_on": 1,
+    "dtc_count": 124,
+    "stored_dtcs": "[\"P0007\", \"P2100\"]"
+  },
+  {
+    "trip_id": 4,
+    "vin": null,
+    "distance_since_dtc_clr": 327,
+    "run_time_s": 229,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 5,
+    "vin": null,
+    "distance_since_dtc_clr": 351,
+    "run_time_s": 128,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 6,
+    "vin": null,
+    "distance_since_dtc_clr": 377,
+    "run_time_s": 98,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 7,
+    "vin": null,
+    "distance_since_dtc_clr": 402,
+    "run_time_s": 108,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 8,
+    "vin": null,
+    "distance_since_dtc_clr": 438,
+    "run_time_s": 83,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 9,
+    "vin": null,
+    "distance_since_dtc_clr": 535,
+    "run_time_s": 1169,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 10,
+    "vin": null,
+    "distance_since_dtc_clr": 1301,
+    "run_time_s": 104,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  },
+  {
+    "trip_id": 11,
+    "vin": null,
+    "distance_since_dtc_clr": 1352,
+    "run_time_s": 140,
+    "mil_on": 0,
+    "dtc_count": 0,
+    "stored_dtcs": "[]"
+  }
+]
