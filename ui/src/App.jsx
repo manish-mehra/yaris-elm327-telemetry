@@ -1,166 +1,148 @@
-import { Fragment, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TripChart from "./TripChart.jsx";
+import ReplayModal from "./ReplayModal.jsx";
 import useDark from "./useDark.js";
 import { SPECS } from "./specs.js";
-import { loadDefault, emptyData } from "./data.js";
+import { loadDefault } from "./data.js";
 import { clock, num, avg, hhmm } from "./utils.js";
+import Replay from "./Replay.jsx";
 
-const Stat = ({ l, v, u, sub }) => (
+// Edit these two lines for your car. Put the photo in public/car.png.
+const CAR = { name: "My car", image: "/car.png" };
+
+const group = (rows) => {
+  const out = {};
+  rows.forEach((r) => (out[r.trip_id] ||= []).push(r));
+  return out;
+};
+const col = (rows, key) => rows.map((r) => r[key]).filter((v) => v != null);
+
+const Stat = ({ label, value, unit, note }) => (
   <div className="stat">
-    <small>{l}</small>
-    <strong>{v}</strong>
-    {u && <em>{u}</em>}
-    {sub && <small>{sub}</small>}
+    <span>{label}</span>
+    <strong>{value}<em>{unit}</em></strong>
+    {note && <small>{note}</small>}
   </div>
 );
 
 export default function App() {
-  const [data, setData] = useState(emptyData);
-  const [loading, setLoading] = useState(true);
-  const [sel, setSel] = useState(null);
-  const [rng, setRng] = useState([0, 100]); // time window, percent of trip
-  const [msg, setMsg] = useState("");
+  const [data, setData] = useState(null); // null = still loading
+  const [tripId, setTripId] = useState(null);
+  const [range, setRange] = useState([0, 100]); // visible window, % of trip
+  const [replayOpen, setReplayOpen] = useState(false);
   const dark = useDark();
 
-  useEffect(() => { loadDefault().then(setData).finally(() => setLoading(false)); }, []);
+  useEffect(() => { loadDefault().then(setData); }, []);
 
   // Group samples by trip once per dataset.
-  const idx = useMemo(() => {
-    const g = (rows) => { const m = {}; rows.forEach((r) => (m[r.trip_id] || (m[r.trip_id] = [])).push(r)); return m; };
-    return { a: g(data.samples_1s), b: g(data.samples_30s), c: Object.fromEntries(data.trip_start_data.map((r) => [r.trip_id, r])) };
-  }, [data]);
-
-  const endOf = (t) => {
-    const r = idx.a[t.id];
-    return t.ended_at || (r && r.length ? r[r.length - 1].ts : t.started_at);
-  };
-
-  // Newest day first; several trips per day.
-  const days = useMemo(() => {
-    const m = new Map();
-    [...data.trips].sort((a, b) => b.started_at - a.started_at).forEach((t) => {
-      const d = new Date(t.started_at), k = d.toDateString();
-      if (!m.has(k)) m.set(k, { label: d.toLocaleDateString(undefined, { weekday: "long", month: "short", day: "numeric" }), trips: [] });
-      m.get(k).trips.push(t);
-    });
-    return [...m.values()];
-  }, [data]);
-
-  const trip = data.trips.find((t) => t.id === sel) || (days[0] && days[0].trips[0]);
-  useEffect(() => setRng([0, 100]), [trip && trip.id]);
-
-  const s1 = trip ? idx.a[trip.id] || [] : [];
-  const s30 = trip ? idx.b[trip.id] || [] : [];
-  const start = trip ? idx.c[trip.id] : null;
-  const dur = trip ? Math.max(1, (endOf(trip) - trip.started_at) / 1000) : 1;
-  const xr = useMemo(() => [(rng[0] * dur) / 100, (rng[1] * dur) / 100], [rng, dur]);
-
-  const st = useMemo(() => {
-    let dist = 0;
-    for (let i = 1; i < s1.length; i++) dist += (s1[i].speed_kmh * (s1[i].ts - s1[i - 1].ts)) / 3.6e6;
-    const col = (rows, k) => rows.map((r) => r[k]).filter((v) => v != null);
+  const by = useMemo(() => {
+    if (!data) return null;
     return {
-      dist, top: Math.max(0, ...col(s1, "speed_kmh")), rpm: avg(col(s1, "rpm")),
-      c0: (s1[0] || {}).coolant_temp_c, c1: (s1[s1.length - 1] || {}).coolant_temp_c,
-      stft: avg(col(s1, "short_fuel_trim")), ltft: avg(col(s30, "long_fuel_trim")),
-      volt: avg(col(s30, "module_voltage_v")), cat: Math.max(...col(s30, "catalyst_temp_c")),
+      s1: group(data.samples_1s),
+      s30: group(data.samples_30s),
+      start: Object.fromEntries(data.trip_start_data.map((r) => [r.trip_id, r])),
     };
-  }, [s1, s30]);
+  }, [data]);
 
+  const trips = useMemo(
+    () => (data ? [...data.trips].sort((a, b) => b.started_at - a.started_at) : []),
+    [data]
+  );
+  const trip = trips.find((t) => t.id === tripId) || trips[0];
+  useEffect(() => setRange([0, 100]), [trip?.id]);
 
+  const s1 = (trip && by.s1[trip.id]) || [];
+  const s30 = (trip && by.s30[trip.id]) || [];
+  const start = trip && by.start[trip.id];
+  const end = trip ? trip.ended_at || s1.at(-1)?.ts || trip.started_at : 0;
+  const seconds = trip ? Math.max(1, (end - trip.started_at) / 1000) : 1;
+  const xr = [(range[0] * seconds) / 100, (range[1] * seconds) / 100];
+
+  const label = (t) =>
+    new Date(t.started_at).toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }) +
+    ", " + hhmm(t.started_at);
+
+  // Numbers shown in the stat tiles.
+  let km = 0;
+  for (let i = 1; i < s1.length; i++) km += (s1[i].speed_kmh * (s1[i].ts - s1[i - 1].ts)) / 3.6e6;
   const dtcs = (() => { try { return JSON.parse(start.stored_dtcs); } catch { return []; } })();
 
   return (
-    <>
-      <header>
-        <div>
-          <h1>Trip log</h1>
-          <div className="hd-sub">{loading ? "Loading…" : data.trips.length + (data.trips.length === 1 ? " trip" : " trips") + " loaded"}</div>
+    <div className="page">
+      <header className="car">
+        <div className="car-photo">
+          <img src={CAR.image} alt={CAR.name} onError={(e) => (e.target.style.display = "none")} />
         </div>
+        <div className="car-info">
+          <h1>{CAR.name}</h1>
+          <p>{start?.vin ? "VIN " + start.vin : "Trip log"}</p>
+          <select
+            value={trip ? trip.id : ""}
+            disabled={!trips.length}
+            onChange={(e) => setTripId(+e.target.value)}
+            aria-label="Choose a trip"
+            style={{marginRight: "2em"}} 
+          >
+            {!trips.length && <option>{data ? "No trips found" : "Loading…"}</option>}
+            {trips.map((t) => <option key={t.id} value={t.id}>{label(t)}</option>)}
+          </select>
+          <button className="rpm-btn" disabled={s1.length < 2} onClick={() => setReplayOpen(true)}>Replay trip</button>
+        </div>
+        {start && (
+          <div className="pills">
+            <span className={start.mil_on ? "pill bad" : "pill"}>Check-engine light {start.mil_on ? "on" : "off"}</span>
+            <span className={start.dtc_count ? "pill bad" : "pill"}>
+              {start.dtc_count ? "Fault codes: " + dtcs.join(", ") : "No fault codes"}
+            </span>
+            <span className="pill">{num(start.distance_since_dtc_clr, 0)} km since codes cleared</span>
+            <span className="pill">Engine had run {clock(start.run_time_s)} at start</span>
+          </div>
+        )}
       </header>
 
-      <div className="app">
-        <aside>
-          {days.map((d) => (
-            <div key={d.label}>
-              <div className="day">
-                <span>{d.label}</span>
-                <span>{d.trips.length + (d.trips.length === 1 ? " trip" : " trips")}</span>
-              </div>
-              {d.trips.map((t) => {
-                const rows = idx.a[t.id] || [], du = (endOf(t) - t.started_at) / 1000, sd = idx.c[t.id];
-                const bad = sd && (sd.mil_on || sd.dtc_count);
-                return (
-                  <button key={t.id} className={"trip" + (trip && trip.id === t.id ? " on" : "")} onClick={() => setSel(t.id)}>
-                    <b>{hhmm(t.started_at)}</b>
-                    <span>{clock(du) + " · top " + Math.max(0, ...rows.map((r) => r.speed_kmh)) + " km/h" + (bad ? " · fault code" : "")}</span>
-                  </button>
-                );
-              })}
-            </div>
-          ))}
-          {msg && <div className="msg">{msg}</div>}
-        </aside>
+      {!data && <div className="loader"><i /> Loading trips…</div>}
+      {data && !trip && (
+        <div className="loader">Add trips.json, samples_1s.json and samples_30s.json to public/data/.</div>
+      )}
 
+      {trip && (
         <main>
-          {!trip ? (
-            <div className="empty">{loading ? "Loading…" : "No trips found. Put trips.json, samples_1s.json and samples_30s.json in public/data/, or use Load JSON files."}</div>
-          ) : (
-            <>
-              <div className="top">
-                <h2>
-                  {new Date(trip.started_at).toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" }) + ", " + hhmm(trip.started_at)}
-                </h2>
-                <span className="hd-sub">{"Trip #" + trip.id + (trip.ended_at ? "" : " · no end time recorded")}</span>
-              </div>
+          <section className="stats">
+            <Stat label="Duration" value={clock(seconds)} />
+            <Stat label="Distance" value={num(km, 1)} unit=" km" note="estimated from speed" />
+            <Stat label="Top speed" value={num(Math.max(0, ...col(s1, "speed_kmh")), 0)} unit=" km/h" />
+            <Stat label="Average RPM" value={num(avg(col(s1, "rpm")), 0)} />
+            <Stat label="Coolant" value={num(s1[0]?.coolant_temp_c, 0) + " → " + num(s1.at(-1)?.coolant_temp_c, 0)} unit=" °C" />
+            <Stat label="Fuel trim" value={num(avg(col(s1, "short_fuel_trim")), 1) + " / " + num(avg(col(s30, "long_fuel_trim")), 1)} unit=" %" note="short / long" />
+            <Stat label="Module voltage" value={num(avg(col(s30, "module_voltage_v")), 2)} unit=" V" />
+            <Stat label="Catalyst peak" value={num(Math.max(...col(s30, "catalyst_temp_c")), 0)} unit=" °C" />
+          </section>
 
-              {start && (
-                <div className="pills">
-                  <span className={"pill" + (start.mil_on ? " bad" : "")}>Check-engine light {start.mil_on ? "on" : "off"}</span>
-                  <span className={"pill" + (start.dtc_count ? " bad" : "")}>
-                    {start.dtc_count ? "Fault codes: " + dtcs.join(", ") : "No fault codes"}
-                  </span>
-                  <span className="pill">{num(start.distance_since_dtc_clr, 0)} km since codes cleared</span>
-                  <span className="pill">Engine had run {clock(start.run_time_s)} at start</span>
-                  <span className="pill">VIN {start.vin || "not read"}</span>
-                </div>
-              )}
+          <section className="range">
+            <label>From <input type="range" min="0" max="100" step="0.5" value={range[0]}
+              onChange={(e) => setRange([Math.min(+e.target.value, range[1] - 2), range[1]])} /></label>
+            <label>To <input type="range" min="0" max="100" step="0.5" value={range[1]}
+              onChange={(e) => setRange([range[0], Math.max(+e.target.value, range[0] + 2)])} /></label>
+            <button onClick={() => setRange([0, 100])}>Show all</button>
+            <p>Showing {clock(xr[0])} to {clock(xr[1])}. Hover a chart to compare the same moment on all of them.</p>
+          </section>
 
-              <div className="stats">
-                <Stat l="Duration" v={clock(dur)} />
-                <Stat l="Distance" v={num(st.dist, 1)} u="km" sub="estimated from speed" />
-                <Stat l="Top speed" v={num(st.top, 0)} u="km/h" />
-                <Stat l="Average RPM" v={num(st.rpm, 0)} />
-                <Stat l="Coolant" v={num(st.c0, 0) + " → " + num(st.c1, 0)} u="°C" />
-                <Stat l="Fuel trim, avg" v={num(st.stft, 1) + " / " + num(st.ltft, 1)} u="%" sub="short / long" />
-                <Stat l="Module voltage" v={num(st.volt, 2)} u="V" />
-                <Stat l="Catalyst peak" v={num(st.cat, 0)} u="°C" />
-              </div>
-
-              <div className="range">
-                <label htmlFor="r0">From</label>
-                <input id="r0" type="range" min="0" max="100" step="0.5" value={rng[0]}
-                  onChange={(e) => setRng([Math.min(+e.target.value, rng[1] - 2), rng[1]])} />
-                <button className="btn" onClick={() => setRng([0, 100])}>Show all</button>
-                <label htmlFor="r1">To</label>
-                <input id="r1" type="range" min="0" max="100" step="0.5" value={rng[1]}
-                  onChange={(e) => setRng([rng[0], Math.max(+e.target.value, rng[0] + 2)])} />
-                <span />
-                <div className="win">
-                  <span>Window {clock(xr[0])} to {clock(xr[1])}</span>
-                  <span>Hover any chart to compare the same moment on all of them. Click a legend item to hide a line.</span>
-                </div>
-              </div>
-
-              <div className="charts">
-                {SPECS.map((sp) => (
-                  <TripChart key={sp.t} spec={sp} t0={trip.started_at} s1={s1} s30={s30} xr={xr} dark={dark} />
-                ))}
-              </div>
-            </>
-          )}
+          <section className="charts">
+            {SPECS.map((spec) => (
+              <TripChart key={spec.t} spec={spec} t0={trip.started_at} s1={s1} s30={s30} xr={xr} dark={dark} />
+            ))}
+          </section>
         </main>
-      </div>
-    </>
+      )}
+      <ReplayModal 
+      open={replayOpen && s1.length > 1} onClose={() => setReplayOpen(false)}
+        title={trip ? "Trip replay: " + label(trip) : ""} key={trip?.id}
+        s1={s1} s30={s30} start={start} dark={dark} />
+        <section className="replay-section">
+  <h2>Watch this trip</h2>
+  <p>Replay the drive second by second. Speed, RPM and engine readings follow the recorded data.</p>
+  <Replay key={trip?.id} s1={s1} s30={s30} start={start} dark={dark} />
+</section>
+    </div>
   );
 }

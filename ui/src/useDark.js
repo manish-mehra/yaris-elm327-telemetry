@@ -1,17 +1,13 @@
 import { useEffect, useState } from "react";
 
-// Follows the OS theme (or data-theme on <html> if you add a toggle later).
+// true when the OS is in dark mode (charts need to know so they can recolor).
 export default function useDark() {
-  const q = () => {
-    const t = document.documentElement.dataset.theme;
-    return t ? t === "dark" : matchMedia("(prefers-color-scheme: dark)").matches;
-  };
-  const [d, setD] = useState(q);
+  const q = window.matchMedia("(prefers-color-scheme: light)");
+  const [dark, setDark] = useState(q.matches);
   useEffect(() => {
-    const m = matchMedia("(prefers-color-scheme: dark)");
-    const f = () => setD(q());
-    m.addEventListener("change", f);
-    return () => m.removeEventListener("change", f);
+    const on = (e) => setDark(e.matches);
+    q.addEventListener("change", on);
+    return () => q.removeEventListener("change", on);
   }, []);
-  return d;
+  return dark;
 }
